@@ -74,8 +74,8 @@ flowchart LR
 
 ## Design notes
 
-- **R2 over S3.** Zero egress is the whole point — a single wedding video at
-  18 Mbps × 2 hours = ~16 GB. A family of 5 each re-streaming it would cost
+- **R2 over S3.** Zero egress is the whole point — a single video at
+  18 Mbps × 2 hours = ~16 GB. A team of 5 each re-streaming it would cost
   ~$22 per gallery on S3 and $0 on R2.
 - **Browser → R2 direct upload, not proxied.** A 16 GB video through a Worker
   proxy would burn CPU time and request counts. With presigned multipart URLs
@@ -118,12 +118,3 @@ npm run dev
 
 For production: `npm run deploy`, then `npx wrangler secret put NAME` for each
 env var (or `wrangler secret bulk` from a JSON file).
-
-## What to customize when forking
-
-- **`src/config/site.ts`** — brand name, domain, business name + address,
-  payment terms.
-- **`src/lib/rates.ts`** — packages and pricing.
-- **`public/logo.png`** — your brand mark.
-
-Everything else is mechanics.
