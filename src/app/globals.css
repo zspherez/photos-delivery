@@ -1,0 +1,32 @@
+@import "tailwindcss";
+
+@theme inline {
+	--font-sans: var(--font-source-sans);
+	--font-mono: var(--font-source-mono);
+	--color-accent: #a5a5e0;
+	--color-accent-strong: #8c8cd6;
+	--color-accent-muted: #5f5e9f;
+}
+
+html,
+body {
+	background: #0a0a0a;
+	color: #fafafa;
+	font-family: var(--font-source-sans), ui-sans-serif, system-ui, sans-serif;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+}
+
+::selection {
+	background: rgba(165, 165, 224, 0.3);
+	color: #fafafa;
+}
+
+/* Subtle accent for autofill so the inputs don't look weird in Chrome/Safari. */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+	-webkit-text-fill-color: #fafafa;
+	-webkit-box-shadow: 0 0 0 1000px #171717 inset;
+	caret-color: #fafafa;
+}

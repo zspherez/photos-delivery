@@ -1,0 +1,16 @@
+{
+	"rules": [
+		{
+			"allowed": {
+				"origins": [
+					"http://localhost:3000",
+					"https://galleries.rehders.photos"
+				],
+				"methods": ["GET", "PUT", "HEAD", "POST", "DELETE"],
+				"headers": ["*"]
+			},
+			"exposeHeaders": ["ETag"],
+			"maxAgeSeconds": 3600
+		}
+	]
+}
