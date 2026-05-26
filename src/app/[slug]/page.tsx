@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
 import GalleryView from "@/components/gallery-view";
 import { SITE } from "@/config/site";
+import { logEvent } from "@/lib/analytics";
 import { db } from "@/lib/env";
 import { isGalleryUnlocked } from "@/lib/gallery-auth";
 import type { Asset, Gallery } from "@/lib/types";
@@ -90,6 +91,8 @@ export default async function GalleryPage({ params }: { params: Promise<{ slug: 
 	if (!(await isGalleryUnlocked(slug, gallery.password_hash))) {
 		redirect(`/${slug}/unlock`);
 	}
+
+	logEvent(await headers(), gallery.id, "view");
 
 	const { results: assets } = await db()
 		.prepare("SELECT * FROM assets WHERE gallery_id = ? ORDER BY sort_order ASC, id ASC")

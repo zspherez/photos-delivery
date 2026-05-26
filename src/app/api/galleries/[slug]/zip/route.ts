@@ -1,4 +1,5 @@
 import { downloadZip } from "client-zip";
+import { logEvent } from "@/lib/analytics";
 import { db } from "@/lib/env";
 import { isGalleryUnlocked } from "@/lib/gallery-auth";
 import { getObject } from "@/lib/r2";
@@ -96,17 +97,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
 
 	const zipName = safeFilename(`${gallery.client_name} - ${gallery.shoot_date}`) + ".zip";
 
-	const cf = req.headers.get("CF-Connecting-IP") ?? req.headers.get("X-Forwarded-For");
-	const ua = req.headers.get("User-Agent");
-	const country = req.headers.get("CF-IPCountry");
-	db()
-		.prepare(
-			`INSERT INTO download_events (gallery_id, asset_id, event_type, ip, user_agent, country, at)
-			VALUES (?, NULL, 'zip_download', ?, ?, ?, ?)`,
-		)
-		.bind(gallery.id, cf, ua, country, nowSeconds())
-		.run()
-		.catch(() => {});
+	logEvent(req.headers, gallery.id, "zip_download");
 
 	const zipResponse = downloadZip(entries());
 	return new Response(zipResponse.body, {

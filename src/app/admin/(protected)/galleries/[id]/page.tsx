@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import AssetGrid from "@/components/asset-grid";
+import GalleryAnalyticsSection from "@/components/gallery-analytics";
 import GalleryShare from "@/components/gallery-share";
 import InvoicePanel from "@/components/invoice-panel";
 import UploadZone from "@/components/upload-zone";
+import { getGalleryAnalytics } from "@/lib/analytics";
 import { db } from "@/lib/env";
 import { buildInvoicePreview } from "@/lib/invoice";
 import { calculateRate, type PackageType } from "@/lib/rates";
@@ -48,6 +50,7 @@ export default async function GalleryDetail({ params }: { params: Promise<{ id: 
 	);
 
 	const invoicePreview = await buildInvoicePreview(gallery.id);
+	const analytics = await getGalleryAnalytics(gallery.id);
 
 	return (
 		<div className="space-y-10">
@@ -185,6 +188,8 @@ export default async function GalleryDetail({ params }: { params: Promise<{ id: 
 					/>
 				) : null}
 			</section>
+
+			<GalleryAnalyticsSection gallery={{ id: gallery.id }} analytics={analytics} />
 		</div>
 	);
 }

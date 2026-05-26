@@ -1,3 +1,4 @@
+import { logEvent } from "@/lib/analytics";
 import { db } from "@/lib/env";
 import { isGalleryUnlocked } from "@/lib/gallery-auth";
 import { getObject } from "@/lib/r2";
@@ -38,18 +39,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
 	const r2 = await getObject(row.original_key, range);
 	if (!r2) return new Response("missing", { status: 500 });
 
-	// Fire-and-forget download event log.
-	const cf = req.headers.get("CF-Connecting-IP") ?? req.headers.get("X-Forwarded-For");
-	const ua = req.headers.get("User-Agent");
-	const country = req.headers.get("CF-IPCountry");
-	db()
-		.prepare(
-			`INSERT INTO download_events (gallery_id, asset_id, event_type, ip, user_agent, country, at)
-			VALUES (?, ?, 'asset_download', ?, ?, ?, ?)`,
-		)
-		.bind(row.gallery_id, row.id, cf, ua, country, nowSeconds())
-		.run()
-		.catch(() => {});
+	logEvent(req.headers, row.gallery_id, "asset_download", row.id);
 
 	const headers = new Headers();
 	headers.set("Content-Type", row.content_type || "application/octet-stream");
