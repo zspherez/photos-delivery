@@ -52,6 +52,8 @@ export type DownloadEvent = {
 	ip: string | null;
 	user_agent: string | null;
 	country: string | null;
+	city: string | null;
+	region: string | null;
 	at: number;
 };
 

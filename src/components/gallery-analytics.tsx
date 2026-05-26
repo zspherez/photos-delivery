@@ -56,7 +56,7 @@ export default function GalleryAnalyticsSection({
 	gallery: { id: number };
 	analytics: GalleryAnalytics;
 }) {
-	const { totals, daily_views, top_assets, countries, recent } = analytics;
+	const { totals, daily_views, top_assets, locations, recent } = analytics;
 	const hasAny =
 		totals.views > 0 || totals.photo_downloads > 0 || totals.zip_downloads > 0;
 
@@ -163,22 +163,32 @@ export default function GalleryAnalyticsSection({
 
 				<div className="rounded-lg border border-neutral-900 bg-neutral-950/40 p-5">
 					<h3 className="text-xs font-medium text-accent uppercase tracking-[0.2em] mb-4">
-						Countries
+						Top locations
 					</h3>
-					{countries.length === 0 ? (
+					{locations.length === 0 ? (
 						<p className="text-sm text-neutral-500">No geo data yet.</p>
 					) : (
 						<ul className="space-y-1.5">
-							{countries.map((c) => (
+							{locations.map((l, i) => (
 								<li
-									key={c.country}
+									key={`${l.country}-${l.region}-${l.city}-${i}`}
 									className="flex items-center gap-3 text-sm"
 								>
 									<span className="w-6 text-center" aria-hidden="true">
-										{countryFlag(c.country)}
+										{countryFlag(l.country)}
 									</span>
-									<span className="flex-1 text-neutral-300 font-mono">{c.country}</span>
-									<span className="tabular-nums text-neutral-200 font-medium">{c.count}</span>
+									<span className="flex-1 truncate text-neutral-300">
+										{l.city ? (
+											<>
+												<span>{l.city}</span>
+												{l.region ? <span className="text-neutral-500">, {l.region}</span> : null}
+												<span className="text-neutral-500 font-mono"> · {l.country}</span>
+											</>
+										) : (
+											<span className="font-mono">{l.country}</span>
+										)}
+									</span>
+									<span className="tabular-nums text-neutral-200 font-medium shrink-0">{l.count}</span>
 								</li>
 							))}
 						</ul>
@@ -200,15 +210,29 @@ export default function GalleryAnalyticsSection({
 								<span className="text-[10px] uppercase tracking-wider text-accent/80 w-24">
 									{eventLabel(e.event_type)}
 								</span>
-								<span className="truncate font-mono text-xs">
-									{e.country ? `${countryFlag(e.country)} ${e.country}` : "·"}
+								<span className="truncate text-xs">
+									{e.country ? (
+										<span className="text-neutral-400">
+											<span aria-hidden="true">{countryFlag(e.country)}</span>
+											{e.city ? (
+												<>
+													{" "}
+													{e.city}
+													<span className="text-neutral-600"> · {e.country}</span>
+												</>
+											) : (
+												<span className="font-mono"> {e.country}</span>
+											)}
+										</span>
+									) : (
+										<span className="text-neutral-600">·</span>
+									)}
 									{e.asset_id ? (
 										<>
-											{" "}
-											·{" "}
+											<span className="text-neutral-600"> · </span>
 											<Link
 												href={`/admin/galleries/${gallery.id}`}
-												className="text-neutral-500 hover:text-neutral-300"
+												className="text-neutral-500 hover:text-neutral-300 font-mono"
 											>
 												asset {e.asset_id}
 											</Link>

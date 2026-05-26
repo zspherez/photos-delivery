@@ -1,3 +1,4 @@
+import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { db } from "./env";
 import { nowSeconds } from "./utils";
 
@@ -21,13 +22,25 @@ export function logEvent(
 	const ua = headers.get("User-Agent");
 	if (isBot(ua)) return;
 	const ip = headers.get("CF-Connecting-IP") ?? headers.get("X-Forwarded-For");
-	const country = headers.get("CF-IPCountry");
+	let country: string | null = headers.get("CF-IPCountry");
+	let city: string | null = null;
+	let region: string | null = null;
+	try {
+		const cf = getCloudflareContext().cf;
+		if (cf) {
+			country = (cf.country as string | undefined) ?? country;
+			city = (cf.city as string | undefined) ?? null;
+			region = (cf.region as string | undefined) ?? null;
+		}
+	} catch {
+		// getCloudflareContext is unavailable outside a request context (e.g. local dev fallback) — fine.
+	}
 	db()
 		.prepare(
-			`INSERT INTO download_events (gallery_id, asset_id, event_type, ip, user_agent, country, at)
-			VALUES (?, ?, ?, ?, ?, ?, ?)`,
+			`INSERT INTO download_events (gallery_id, asset_id, event_type, ip, user_agent, country, city, region, at)
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		)
-		.bind(galleryId, assetId, eventType, ip, ua, country, nowSeconds())
+		.bind(galleryId, assetId, eventType, ip, ua, country, city, region, nowSeconds())
 		.run()
 		.catch(() => {});
 }
@@ -48,12 +61,14 @@ export type GalleryAnalytics = {
 		original_filename: string;
 		type: "photo" | "video";
 	}[];
-	countries: { country: string; count: number }[];
+	locations: { country: string; region: string; city: string; count: number }[];
 	recent: {
 		id: number;
 		event_type: EventType;
 		asset_id: number | null;
 		country: string | null;
+		region: string | null;
+		city: string | null;
 		user_agent: string | null;
 		at: number;
 	}[];
@@ -65,7 +80,7 @@ export async function getGalleryAnalytics(galleryId: number): Promise<GalleryAna
 	const since30d = nowSeconds() - 30 * DAY_SECONDS;
 	const d = db();
 
-	const [totalsRes, dailyRes, topAssetsRes, countriesRes, recentRes] = await d.batch([
+	const [totalsRes, dailyRes, topAssetsRes, locationsRes, recentRes] = await d.batch([
 		d.prepare(
 			`SELECT
 				SUM(CASE WHEN event_type = 'view' THEN 1 ELSE 0 END) AS views,
@@ -93,15 +108,19 @@ export async function getGalleryAnalytics(galleryId: number): Promise<GalleryAna
 			LIMIT 10`,
 		).bind(galleryId),
 		d.prepare(
-			`SELECT COALESCE(country, '??') AS country, COUNT(*) AS count
+			`SELECT
+				COALESCE(country, '??') AS country,
+				COALESCE(region, '') AS region,
+				COALESCE(city, '') AS city,
+				COUNT(*) AS count
 			FROM download_events
 			WHERE gallery_id = ?
-			GROUP BY country
+			GROUP BY country, region, city
 			ORDER BY count DESC
 			LIMIT 10`,
 		).bind(galleryId),
 		d.prepare(
-			`SELECT id, event_type, asset_id, country, user_agent, at
+			`SELECT id, event_type, asset_id, country, region, city, user_agent, at
 			FROM download_events
 			WHERE gallery_id = ?
 			ORDER BY at DESC
@@ -122,7 +141,7 @@ export async function getGalleryAnalytics(galleryId: number): Promise<GalleryAna
 		},
 		daily_views: (dailyRes.results ?? []) as { day: string; count: number }[],
 		top_assets: (topAssetsRes.results ?? []) as GalleryAnalytics["top_assets"],
-		countries: (countriesRes.results ?? []) as { country: string; count: number }[],
+		locations: (locationsRes.results ?? []) as GalleryAnalytics["locations"],
 		recent: (recentRes.results ?? []) as GalleryAnalytics["recent"],
 	};
 }
